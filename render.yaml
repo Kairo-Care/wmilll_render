@@ -6,8 +6,9 @@ services:
     repo: https://github.com/alpetric/wmilll_render.git
     buildCommand: npm install
     startCommand: npm run setup-db
-    plan: starter
     envVars:
+      - key: WINDMILL_SETUP_DB_READY
+        value: "true"
       - key: DATABASE_URL
         fromDatabase:
           name: windmill-db
@@ -20,6 +21,51 @@ services:
     healthCheckPath: /
     repo: https://github.com/alpetric/wmilll_render.git
     envVars:
+      - key: WINDMILL_SETUP_DB_READY
+        fromService:
+          name: windmill-setup-db
+          type: worker
+          envVarKey: WINDMILL_SETUP_DB_READY
+      - key: WINDMILL_MINIO_SERVER_READY
+        fromService:
+          name: windmill-minio-server
+          type: web
+          envVarKey: WINDMILL_MINIO_SERVER_READY
+      - key: WINDMILL_MINIO_CONSOLE_READY
+        fromService:
+          name: windmill-minio-console
+          type: web
+          envVarKey: WINDMILL_MINIO_CONSOLE_READY
+      - key: WINDMILL_SERVER_READY
+        fromService:
+          name: windmill-server
+          type: pserv
+          envVarKey: WINDMILL_SERVER_READY
+      - key: WINDMILL_INDEXER_READY
+        fromService:
+          name: windmill-indexer
+          type: pserv
+          envVarKey: WINDMILL_INDEXER_READY
+      - key: WINDMILL_WORKER_READY
+        fromService:
+          name: windmill-worker
+          type: worker
+          envVarKey: WINDMILL_WORKER_READY
+      - key: WINDMILL_WORKER_NATIVE_READY
+        fromService:
+          name: windmill-worker-native
+          type: worker
+          envVarKey: WINDMILL_WORKER_NATIVE_READY
+      - key: WINDMILL_MULTIPLAYER_READY
+        fromService:
+          name: windmill-multiplayer
+          type: pserv
+          envVarKey: WINDMILL_MULTIPLAYER_READY
+      - key: WINDMILL_LSP_READY
+        fromService:
+          name: windmill-lsp
+          type: pserv
+          envVarKey: WINDMILL_LSP_READY
       - key: WINDMILL_SERVER_HOST
         fromService:
           name: windmill-server
@@ -27,12 +73,12 @@ services:
           property: host
       - key: LSP_HOST
         fromService:
-          name: lsp
+          name: windmill-lsp
           type: pserv
           property: host
       - key: MULTIPLAYER_HOST
         fromService:
-          name: multiplayer
+          name: windmill-multiplayer
           type: pserv
           property: host
       - key: INDEXER_HOST
@@ -40,7 +86,7 @@ services:
           name: windmill-indexer
           type: pserv
           property: host
-          
+
   # Windmill Server
   - type: pserv
     name: windmill-server
@@ -48,6 +94,13 @@ services:
     image:
       url: ghcr.io/windmill-labs/windmill-ee:main
     envVars:
+      - key: WINDMILL_SETUP_DB_READY
+        fromService:
+          name: windmill-setup-db
+          type: worker
+          envVarKey: WINDMILL_SETUP_DB_READY
+      - key: WINDMILL_SERVER_READY
+        value: "true"
       - key: DATABASE_URL
         fromDatabase:
           name: windmill-db
@@ -63,9 +116,15 @@ services:
     runtime: image
     image:
       url: ghcr.io/windmill-labs/windmill-ee:main
-    plan: starter
     numInstances: 3
     envVars:
+      - key: WINDMILL_SERVER_READY
+        fromService:
+          name: windmill-server
+          type: pserv
+          envVarKey: WINDMILL_SERVER_READY
+      - key: WINDMILL_WORKER_READY
+        value: "true"
       - key: DATABASE_URL
         fromDatabase:
           name: windmill-db
@@ -93,6 +152,16 @@ services:
       url: ghcr.io/windmill-labs/windmill-ee:main
     plan: starter
     envVars:
+      - key: WINDMILL_SERVER_READY
+        fromService:
+          name: windmill-server
+          type: pserv
+          envVarKey: WINDMILL_SERVER_READY
+      - key: MINIO_SERVER_READY
+        fromService:
+          name: windmill-minio-server
+          type: web
+          envVarKey: WINDMILL_MINIO_SERVER_READY
       - key: DATABASE_URL
         fromDatabase:
           name: windmill-db
@@ -103,6 +172,8 @@ services:
         value: native
       - key: NUM_WORKERS
         value: "8"
+      - key: WINDMILL_WORKER_NATIVE_READY
+        value: "true"
       - key: SLEEP_QUEUE
         value: "200"
 
@@ -113,6 +184,11 @@ services:
     image:
       url: ghcr.io/windmill-labs/windmill-ee:main
     envVars:
+      - key: WINDMILL_SERVER_READY
+        fromService:
+          name: windmill-server
+          type: pserv
+          envVarKey: WINDMILL_SERVER_READY
       - key: PORT
         value: "8001"
       - key: DATABASE_URL
@@ -121,35 +197,49 @@ services:
           property: connectionString
       - key: MODE
         value: indexer
+      - key: WINDMILL_INDEXER_READY
+        value: "true"
 
   # New service: LSP
   - type: pserv
-    name: lsp
+    name: windmill-lsp
     runtime: image
     image:
       url: ghcr.io/windmill-labs/windmill-lsp:latest
     envVars:
+      - key: WINDMILL_SERVER_READY
+        fromService:
+          name: windmill-server
+          type: pserv
+          envVarKey: WINDMILL_SERVER_READY
       - key: PORT
         value: "3001"
+      - key: WINDMILL_LSP_READY
+        value: "true"
     disk:
       name: lsp_cache
       mountPath: /pyls/.cache
-      sizeGB: 2
-
 
   # New service: Multiplayer
   - type: pserv
-    name: multiplayer
+    name: windmill-multiplayer
     runtime: image
     envVars:
+      - key: WINDMILL_SERVER_READY
+        fromService:
+          name: windmill-server
+          type: pserv
+          envVarKey: WINDMILL_SERVER_READY
       - key: PORT
         value: "3002"
+      - key: WINDMILL_MULTIPLAYER_READY
+        value: "true"
     image:
       url: ghcr.io/windmill-labs/windmill-multiplayer:latest
-  
-   # A private service with an attached persistent disk
+
+    # A private service with an attached persistent disk
   - type: web
-    name: minio-server
+    name: windmill-minio-server
     healthCheckPath: /minio/health/live
     runtime: image
     image:
@@ -158,39 +248,46 @@ services:
     disk:
       name: data
       mountPath: /data
-      sizeGB: 2
     envVars:
-    - key: MINIO_ROOT_USER
-      generateValue: true
-    - key: MINIO_ROOT_PASSWORD
-      generateValue: true
-    - key: HOST
-      value: "0.0.0.0"
-    - key: PORT
-      value: 9000
-    - key: CONSOLE_PORT
-      value: 9090
-  
+      - key: WINDMILL_SETUP_DB_READY
+        fromService:
+          name: windmill-setup-db
+          type: worker
+          envVarKey: WINDMILL_SETUP_DB_READY
+      - key: MINIO_ROOT_USER
+        generateValue: true
+      - key: MINIO_ROOT_PASSWORD
+        generateValue: true
+      - key: HOST
+        value: "0.0.0.0"
+      - key: PORT
+        value: 9000
+      - key: CONSOLE_PORT
+        value: 9090
+      - key: WINDMILL_MINIO_SERVER_READY
+        value: "true"
+
   - type: web
-    name: minio-console
+    name: windmill-minio-console
     runtime: docker
     repo: https://github.com/render-examples/minio
     dockerContext: /
     dockerfilePath: ./Dockerfile
     envVars:
-    - key: PORT
-      value: 10000
-    - key: MINIO_HOST
-      fromService:
-        name: minio-server
-        type: web
-        property: host
-    - key: MINIO_CONSOLE_PORT
-      fromService:
-        name: minio-server
-        type: web
-        envVarKey: CONSOLE_PORT
-
+      - key: PORT
+        value: 10000
+      - key: MINIO_HOST
+        fromService:
+          name: windmill-minio-server
+          type: web
+          property: host
+      - key: MINIO_CONSOLE_PORT
+        fromService:
+          name: windmill-minio-server
+          type: web
+          envVarKey: CONSOLE_PORT
+      - key: WINDMILL_MINIO_CONSOLE_READY
+        value: "true"
 
 databases:
   - name: windmill-db

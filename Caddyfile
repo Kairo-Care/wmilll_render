@@ -1,14 +1,14 @@
 :10000 {
     bind 0.0.0.0
     
-    # language server
-    reverse_proxy /ws/* http://{$LSP_HOST}:3001
+    # # language server
+    # reverse_proxy /ws/* http://{$LSP_HOST}:3001
 
-    # multiplayer
-    reverse_proxy /ws_mp/* http://{$MULTIPLAYER_HOST}:3002
+    # # multiplayer
+    # reverse_proxy /ws_mp/* http://{$MULTIPLAYER_HOST}:3002
 
-    # indexer
-    reverse_proxy /api/srch/* http://{$INDEXER_HOST}:8001
+    # # indexer
+    # reverse_proxy /api/srch/* http://{$INDEXER_HOST}:8001
 
     # Default catch-all reverse proxy
     reverse_proxy http://{$WINDMILL_SERVER_HOST}:8000
